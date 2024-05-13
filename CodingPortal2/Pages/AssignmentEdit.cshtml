@@ -1,0 +1,136 @@
+﻿@page
+@using CodingPortal2.DatabaseEnums
+@using CodingPortal2.Shared
+@model CodingPortal2.Pages.AssignmentEditModel
+
+@{
+    Layout = UserHelper.GetLayoutBasedOnPermissionLevel(Model.PermissionLevel);
+    ViewData["Title"] = "Assignment Edit Form";
+}
+
+@if (ViewData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @ViewData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (ViewData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @ViewData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<!DOCTYPE html>
+
+<div>
+    <form method="post">
+        <input type="hidden" asp-for="Assignment.AssignmentId" />
+        <div class="formDiv">
+            <input asp-for="Assignment.Title" class="form-control" placeholder="Enter unique title" id="Assignment_Title"/>
+            <div id="titleErrorMessage" style="color: red;"></div>
+        </div>
+        <div class="formDiv">
+            <input asp-for="Assignment.TotalPoints" type="number" class="form-control" placeholder="Enter amount of points to earn" min="0"/>
+        </div>
+        <div class="formDiv">
+            <select asp-for="Assignment.ProgrammingLanguage" asp-items="Html.GetEnumSelectList<ProgrammingLanguage>()" class="form-control">
+                <option value="">Select Language</option>
+            </select>
+        </div>
+        <div class="formDiv d-flex align-items-center">
+            <div>
+                <label>Upload Frequency&nbsp;</label>
+            </div>
+            <div class="input-group" style="width: 12%; min-width: 240px">
+                <input id="Days" name="Days" type="number" class="form-control" placeholder="Days" min="0" max="365" value="@Model.Assignment.UploadFrequency.Days"/>
+                <input id="Hours" name="Hours" type="number" class="form-control" placeholder="Hours" min="0" max="8000" value="@Model.Assignment.UploadFrequency.Hours"/>
+                <input id="Minutes" name="Minutes" type="number" class="form-control" placeholder="Minutes" min="0" max="500000" value="@Model.Assignment.UploadFrequency.Minutes"/>
+            </div>
+        </div>
+        <div class="formDiv">
+            <textarea asp-for="Assignment.Content" placeholder="Enter Assignment Content Here"></textarea>
+        </div>
+        <div class="formDiv">
+            <div class="input-group">
+                <input id="PathToTestsFolder" name="PathToTestsFolder" type="text" class="form-control" placeholder="Path to tests folder" value="@Model.Assignment.PathToTests"/>
+            </div>
+        </div>
+        <div align="right" style="margin-right: 1%">
+            <button class="btn btn-primary" id="SaveChanges" type="submit" name="action" value="SaveChanges">Save</button>
+        </div>
+    </form>
+</div>
+
+<script src="https://cdn.tiny.cloud/1/c5i14e3l42qin7qdrj4o7oe2mgw0jhilymlrm4f6x0bc7ymw/tinymce/5/tinymce.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    tinymce.init({
+        selector: 'textarea',
+        height: 380,
+    });
+
+    const title = document.querySelector('#Assignment_Title');
+    const content = document.querySelector('#Assignment_Content');
+    const totalPoints = document.querySelector('#Assignment_TotalPoints');
+    const language = document.querySelector('#Assignment_ProgrammingLanguage');
+    const saveChangesButton = document.getElementById('SaveChanges');
+    const daysInput = document.getElementById('Days');
+    const hoursInput = document.getElementById('Hours');
+    const minutesInput = document.getElementById('Minutes');
+    const errorMessage = document.getElementById('titleErrorMessage');
+    
+    enableSaveChangesButton();
+
+    async function checkTitleExists(title, assignmentId) {
+        assignmentId = parseInt(assignmentId);
+        
+        const response = await fetch(`/AssignmentEdit?handler=CheckTitleExists&title=${title}&assignmentId=${assignmentId}`, { method: 'GET' });
+        const data = await response.json();
+
+        if (data.exists) {
+            errorMessage.textContent = 'Assignment with this title already exists!';
+            saveChangesButton.disabled = true;
+        } else {
+            errorMessage.textContent = '';
+            enableSaveChangesButton();
+        }
+    }
+
+    function enableSaveChangesButton() {
+        let hours = parseInt(hoursInput.value) || 0;
+        let minutes = parseInt(minutesInput.value) || 0;
+        let days = parseInt(daysInput.value) || 0;
+
+        if (daysInput.value > 365) { daysInput.value = "365"; }
+        if (daysInput.value === "0") { daysInput.value = ""; }
+        if (hoursInput.value === "0") { hoursInput.value = ""; }
+        if (minutesInput.value === "0") { minutesInput.value = ""; }
+        if (totalPoints.value === "0") { totalPoints.value = ""; }
+
+        saveChangesButton.disabled = (hours === 0 && minutes === 0 && days === 0) ||
+            title.value === '' ||
+            totalPoints.value === '' ||
+            language.value === 'Select Language';
+    }
+
+    daysInput.addEventListener('input', enableSaveChangesButton);
+    hoursInput.addEventListener('input', enableSaveChangesButton);
+    minutesInput.addEventListener('input', enableSaveChangesButton);
+    totalPoints.addEventListener('input', enableSaveChangesButton);
+    language.addEventListener('change', enableSaveChangesButton);
+    content.addEventListener('input', enableSaveChangesButton);
+    title.addEventListener('input', function () { checkTitleExists(this.value, @Model.Assignment.AssignmentId); });
+});
+</script>
+
+
+<style>
+    .formDiv {
+        margin: 1%;
+    }
+</style>

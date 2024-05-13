@@ -1,0 +1,97 @@
+﻿@page
+@using CodingPortal2.DatabaseEnums
+@using CodingPortal2.Shared
+@model CodingPortal2.Pages.GroupListModel
+
+@{
+    Layout = UserHelper.GetLayoutBasedOnPermissionLevel(Model.PermissionLevel);
+    ViewData["Title"] = "Group List";
+}
+
+@if (ViewData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @ViewData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (ViewData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @ViewData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<!DOCTYPE html>
+<form method="post">
+    <div>
+        <table class="table table-bordered" id="groupTable">
+            <thead>
+                <tr>
+                    <th scope="col">GroupId</th>
+                    <th scope="col">
+                        <label for="searchInput">Group Code:</label>
+                        <input class="form-control" type="text" id="searchInput" onkeyup="filterTable()" placeholder="Search...">
+                    </th>
+                    <th scope="col">Year</th>
+                    <th scope="col">Semester</th>
+                    <th scope="col">Update</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (var i = 0; i < Model.Groups.Count; i++)
+                {
+                    var group = Model.Groups[i];
+                    <tr>
+                        <td>
+                            <span>@group.GroupId</span>
+                            <input type="hidden" name="groups[@i].GroupId" value="@group.GroupId" />
+                        </td>
+                        <td>
+                            <span>@group.Code</span>
+                        </td>
+                        <td>
+                            <input class="form-control" style="width: auto;" type="text" name="groups[@i].Year" value="@group.Year" />
+                        </td>
+                        <td>
+                            <select class="btn btn-primary" style="width: 155px;" name="groups[@i].Semester">
+                                @foreach (var semesterOption in Enum.GetValues(typeof(Semester)))
+                                {
+                                    var isSelected = semesterOption.Equals(group.Semester) ? "selected" : null;
+                                    <option value="@semesterOption" selected="@isSelected">@semesterOption</option>
+                                }
+                            </select>
+                        </td>
+                        <td>
+                            <button class="btn btn-primary" style="width: 155px;" type="submit" name="action" value="UpdateGroup">Update</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</form>
+
+<script>
+    function filterTable() {
+        let input, filter, table, tr, td, i, txtValue;
+        input = document.getElementById("searchInput");
+        filter = input.value.toUpperCase();
+        table = document.getElementById("groupTable");
+        tr = table.getElementsByTagName("tr");
+
+        for (i = 0; i < tr.length; i++) {
+            td = tr[i].getElementsByTagName("td")[1]; // Index 1 corresponds to the Group Code column
+            if (td) {
+                txtValue = td.textContent || td.innerText;
+                if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                    tr[i].style.display = "";
+                } else {
+                    tr[i].style.display = "none";
+                }
+            }
+        }
+    }
+</script>

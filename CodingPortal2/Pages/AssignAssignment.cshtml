@@ -1,0 +1,220 @@
+﻿    @page "/AssignAssignment/{assignmentId:int}"
+    @using CodingPortal2.Shared
+    @model CodingPortal2.Pages.AssignAssignmentModel
+
+    @{
+        Layout = UserHelper.GetLayoutBasedOnPermissionLevel(Model.PermissionLevel);
+        ViewData["Title"] = "Assign Task";
+    }
+
+    @if (ViewData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @ViewData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (ViewData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @ViewData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!DOCTYPE html>
+
+    <div align="center">
+        <h2 class="text-center">Assignment Title: @Model.Assignment.Title</h2>
+        
+        <form method="post" asp-page-handler="AssignTask">
+            <input type="hidden" name="AssignmentId" value="@Model.Assignment.AssignmentId"/>
+            <div class="row align-items-center" style="max-width: 400px">
+                <div class="col" style="min-width: 200px">
+                    <table class="table table-bordered">
+                        <thead>
+                        <tr>
+                            <th style="width: 35px; height: 35px;">
+                                <input class="form-check-input" id="CheckAllUsers" type="checkbox" style="width: 25px; height: 25px;"/>
+                            </th>
+                            <th>User Logins</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <input class="form-control" type="text" id="searchLogin" placeholder="Search...">
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="col" style="min-width: 200px">
+                    <table class="table table-bordered">
+                        <thead>
+                        <tr>
+                            <th style="width: 35px; height: 35px;">
+                                <input class="form-check-input" id="CheckAllGroups" type="checkbox" style="width: 25px; height: 25px;"/>
+                            </th>
+                            <th>Groups</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <input class="form-control" type="text" id="searchGroup" placeholder="Search...">
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="col">
+                    <div class="scrollable-table" style="max-height: 500px; min-height: 499px; overflow-y: auto;">
+                        <table class="table table-bordered" id="userLoginTable">
+                            <thead>
+                            <tr>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            @foreach (var user in Model.Users)
+                            {
+                                <tr>
+                                    <td style="width: 35px; height: 35px;">
+                                        <input class="form-check-input" type="checkbox" name="SelectedUserLogins" value="@user.UserId" style="width: 25px; height: 25px;"/>
+                                    </td>
+                                    <td>@user.Login</td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="scrollable-table" style="max-height: 500px; min-height: 499px; overflow-y: auto;">
+                        <table class="table table-bordered" id="groupCodeTable">
+                            <thead>
+                            </thead>
+                            <tbody>
+                            @foreach (var group in Model.GroupsOfCreator)
+                            {
+                                <tr>
+                                    <td style="width: 35px; height: 35px;">
+                                        <input class="form-check-input" type="checkbox" name="SelectedGroupCodes" value="@group.Code" style="width: 25px; height: 25px;"/>
+                                    </td>
+                                    <td>@group.Code</td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="formDiv" style="width: 18%; min-width: 360px">
+                <div>
+                    <table style="margin: 0.25%">
+                        <th>Time to complete assignment</th>
+                    </table>
+                </div>
+                <div class="input-group">
+                    <input name="Days" type="number" class="form-control" placeholder="Days" min="0" max="365"/>
+                    <input name="Hours" type="number" class="form-control" placeholder="Hours" min="0" max="8000"/>
+                    <input name="Minutes" type="number" class="form-control" placeholder="Minutes" min="0" max="500000"/>
+                </div>
+            </div>
+            <div align="center">
+                <div id="notConfirmedAssignment" style="color: red;"></div>
+                <button id="AssignButton" class="btn btn-primary" type="submit" name="action" value="AssignAssignment" style="width: 125px; margin: 1%" disabled>Assign</button>
+            </div>
+        </form>
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" integrity="sha512-TO4dp7z3/T3sRnUNtp07cXv5Ed5t9H98p4LckrtH/J1sY9w7WAfIMibzrLNMI6yRgIT00Wpjs3SaeOpX49lh+g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            let tableFilter = new TableFilter('userTable', 'groupTable', 'searchLogin', 'searchGroup');
+            let SelectedUserLogins = document.getElementById("SelectedUserLogins");
+            let SelectedGroupCodes = document.getElementById("SelectedGroupCodes");
+            
+            let notConfirmedAssignment = document.getElementById("notConfirmedAssignment");
+            checkTaskConfirmed();
+
+            function enableAssignButton() {
+                let daysInput = document.getElementsByName("Days")[0];
+                let hoursInput = document.getElementsByName("Hours")[0];
+                let minutesInput = document.getElementsByName("Minutes")[0];
+
+                if (daysInput.value === "0") { daysInput.value = ""; }
+                if (hoursInput.value === "0") { hoursInput.value = ""; }
+                if (minutesInput.value === "0") { minutesInput.value = ""; }
+
+                let days = parseInt(daysInput.value) || 0;
+                let hours = parseInt(hoursInput.value) || 0;
+                let minutes = parseInt(minutesInput.value) || 0;
+
+                let assignButton = document.getElementById("AssignButton");
+
+                assignButton.disabled = (days === 0 && hours === 0 && minutes === 0);
+            }
+            
+            function checkTaskConfirmed() {
+                let isTaskConfirmed = @(Model.Assignment.IsConfirmed.ToString().ToLower());
+            
+                if (!isTaskConfirmed) {
+                    notConfirmedAssignment.innerHTML = "Assignment is not confirmed. Assigning it will confirm it automatically.";
+                }
+            }
+
+            document.getElementsByName("Days")[0].addEventListener('input', enableAssignButton);
+            document.getElementsByName("Hours")[0].addEventListener('input', enableAssignButton);
+            document.getElementsByName("Minutes")[0].addEventListener('input', enableAssignButton);
+            
+            document.getElementById("CheckAllUsers").addEventListener('change', function () {
+                let userCheckboxes = document.querySelectorAll('input[name="SelectedUserLogins"]');
+                userCheckboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                });
+            });
+            
+            document.getElementById("CheckAllGroups").addEventListener('change', function () {
+                let groupCheckboxes = document.querySelectorAll('input[name="SelectedGroupCodes"]');
+                groupCheckboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                });
+            });
+        });
+        
+        class TableFilter {
+            constructor(userTableId, groupTableId, searchLoginId, searchGroupId) {
+                this.userTable = document.getElementById(userTableId);
+                this.groupTable = document.getElementById(groupTableId);
+                this.searchLoginInput = document.getElementById(searchLoginId);
+                this.searchGroupInput = document.getElementById(searchGroupId);
+
+                // Initialize event listeners
+                this.searchLoginInput.addEventListener('input', () => this.filterTable('userTable'));
+                this.searchGroupInput.addEventListener('input', () => this.filterTable('groupTable'));
+            }
+
+            filterTable(columnName) {
+                let input, filter, table, tr, td, i, txtValue;
+                input = (columnName === 'userTable') ? this.searchLoginInput : this.searchGroupInput;
+                filter = input.value.toUpperCase();
+
+                table = (columnName === 'userTable') ? this.userTable : this.groupTable;
+
+                tr = table.getElementsByTagName("tr");
+
+                for (i = 0; i < tr.length; i++) {
+                    td = tr[i].getElementsByTagName("td")[1];
+                    if (td) {
+                        txtValue = td.textContent || td.innerText;
+                        if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                            tr[i].style.display = "";
+                        } else {
+                            tr[i].style.display = "none";
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+

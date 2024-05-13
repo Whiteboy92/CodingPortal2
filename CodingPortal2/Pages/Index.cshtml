@@ -1,0 +1,143 @@
+﻿@page
+@using CodingPortal2.Shared
+@model CodingPortal2.Pages.IndexModel
+@{
+    Layout = UserHelper.GetLayoutBasedOnPermissionLevel(Model.PermissionLevel);
+    ViewData["Title"] = "Home page";
+}
+
+@functions {
+    private bool AssignmentHasSolutions(int assignmentId)
+    {
+        return Model.AssignmentHasSolutions(assignmentId);
+    }
+}
+
+
+@if (ViewData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @ViewData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (ViewData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @ViewData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="text-center">
+    <div id="permissionBasedContent">
+        <table class="table table-bordered taskViewTable">
+            <thead>
+                <tr>
+                    <th scope="col">Id</th>
+                    <th scope="col">
+                        <label class="d-block" style="min-width: 450px" for="searchTitle">Title</label>
+                        <input class="form-control" type="text" id="searchTitle" onkeyup="filterTable('Title')" placeholder="Search...">
+                    </th>
+                    <th scope="col">Language</th>
+
+                    @if (Model.PermissionLevel is "Admin" or "Teacher")
+                    {
+                        <th scope="col">Is Confirmed</th>
+                        <th scope="col">Assign Assignment</th>
+                        <th scope="col">Use as template</th>
+                        <th scope="col">Edit</th>
+                    }
+                    <th scope="col">Open Assignment</th>
+                    @if (Model.PermissionLevel is "Admin" or "Teacher")
+                    {
+                        <th scope="col">Delete Assignment</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var assignment in Model.Assignments)
+                {
+                    <tr>
+                        <td>@assignment.AssignmentId</td>
+                        <td>@assignment.Title</td>
+                        <td>@assignment.ProgrammingLanguage</td>
+
+                        @if (Model.PermissionLevel is "Admin" or "Teacher")
+                        {
+                            <td>
+                                <form method="post" asp-page-handler="UpdateAssignmentStatus" asp-route-assignmentId="@assignment.AssignmentId">
+                                    @if (assignment.IsConfirmed)
+                                    {
+                                        <input type="hidden" name="IsConfirmed" value="false" />
+                                        <button type="submit" class="btn btn-danger confirm-btn" style="width: 155px">UnConfirm</button>
+                                    }
+                                    else
+                                    {
+                                        <button type="submit" class="btn btn-primary confirm-btn" style="width: 155px">Confirm</button>
+                                    }
+                                </form>
+                            </td>
+                            <td>
+                                <a href="/AssignAssignment/@assignment.AssignmentId" class="btn btn-primary open-btn" style="width: 155px">Assign</a>
+                            </td>
+                            <form method="post" asp-page-handler="UseAsTemplate" asp-route-assignmentId="@assignment.AssignmentId">
+                                <td>
+                                    <button type="submit" class="btn btn-primary" style="width: 155px">Use as template</button>
+                                </td>
+                            </form>
+                            <form method="post" asp-page-handler="AssignmentEdit" asp-route-assignmentId="@assignment.AssignmentId">
+                                <td>
+                                    <button type="submit" class="btn btn-primary" style="width: 155px">Edit</button>
+                                </td>
+                            </form>
+                        }
+                        <td>
+                            <a href="/AssignmentView/@assignment.AssignmentId" class="btn btn-primary open-btn" style="width: 155px">Open</a>
+                        </td>
+                            @if (Model.PermissionLevel is "Admin" or "Teacher")
+                            {
+                                <td>
+                                    @if (!AssignmentHasSolutions(assignment.AssignmentId))
+                                    {
+                                        <form method="post" asp-page-handler="DeleteAssignment" asp-route-assignmentId="@assignment.AssignmentId">
+                                            <input type="hidden" name="AssignmentId" value="@assignment.AssignmentId" />
+                                            <button type="submit" class="btn btn-danger confirm-btn" style="width: 155px">Delete</button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-danger confirm-btn" style="width: 155px" disabled>Has solutions</button>
+                                    }
+                                </td>
+                            }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    function filterTable(columnName) {
+        let input, filter, table, tr, td, i, txtValue;
+        input = document.getElementById("search" + columnName);
+        filter = input.value.toUpperCase();
+        table = document.querySelector(".taskViewTable");
+
+        tr = table.getElementsByTagName("tr"); 
+
+        for (i = 0; i < tr.length; i++) {
+            td = tr[i].getElementsByTagName("td")[columnName === "Title" ? 1 : 2];
+            if (td) {
+                txtValue = td.textContent || td.innerText;
+                if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                    tr[i].style.display = "";
+                } else {
+                    tr[i].style.display = "none";
+                }
+            }
+        }
+    }
+</script>

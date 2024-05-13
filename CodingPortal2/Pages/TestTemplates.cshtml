@@ -1,0 +1,111 @@
+﻿@page
+@using CodingPortal2.Shared
+@model CodingPortal2.Pages.TestTemplatesViewModel
+
+@{
+    Layout = UserHelper.GetLayoutBasedOnPermissionLevel(Model.PermissionLevel);
+    ViewData["Title"] = "Task Details";
+}
+
+@if (ViewData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @ViewData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (ViewData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @ViewData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<!DOCTYPE html>
+<div style="background-color:#1e1e1e;color:#dcdcdc;">
+    <div style="background-color:#1e1e1e;color:#dcdcdc;">
+        <span>Instructions for tests</span><br/>
+        <span>Method names should not be modified in any way.</span><br/>
+        <span>Set inputs / memory (MB) / Execution Time (ms) for as many test cases as you wish.</span><br/>
+        <span>Set correct output which will be compared with output from student's program, if they match the test case will be passed.</span><br/>
+        <span>This should be saved to a file with .txt extension with any name.</span><br/>
+    </div>
+    <div style="background-color: lightblue; height: 1px;"></div>
+    <div>
+        <div style="background-color:#1e1e1e;color:#dcdcdc;">
+            <pre style="font-family:'Consolas',monospace;font-size:11.3pt;"><span style="color:#569cd6;">#</span>!/bin/bash
+        
+        getNumTests() {
+            echo <span style="color:#b5cea8;">5
+        </span>}
+        
+        getTestInput() {
+            local <span style="color:#9cdcfe;">test_index</span>=$<span style="color:#b5cea8;">1
+        </span><span style="color:#b5cea8;">    </span><span style="color:#569cd6;">case </span>$<span style="color:#9cdcfe;">test_index </span><span style="color:#569cd6;">in
+        </span><span style="color:#569cd6;">        </span><span style="color:#b5cea8;">0</span>) echo <span style="color:#d69d85;">&quot;5 10 8 15 3 6&quot;</span>;;  
+                <span style="color:#b5cea8;">1</span>) echo <span style="color:#d69d85;">&quot;2 4 7 9 1 5&quot;</span>;;      
+                <span style="color:#b5cea8;">2</span>) echo <span style="color:#d69d85;">&quot;10 20 30&quot;</span>;;       
+                <span style="color:#b5cea8;">3</span>) echo <span style="color:#d69d85;">&quot;100 25 50 75 15&quot;</span>;;      
+                <span style="color:#b5cea8;">4</span>) echo <span style="color:#d69d85;">&quot;3 6 9 12&quot;</span>;;       
+                *) echo <span style="color:#d69d85;">&quot;&quot;</span>;;
+            esac
+        }
+        
+        getMemoryLimits() {
+            local <span style="color:#9cdcfe;">test_index</span>=$<span style="color:#b5cea8;">1
+        </span><span style="color:#b5cea8;">    </span><span style="color:#569cd6;">case </span>$<span style="color:#9cdcfe;">test_index </span><span style="color:#569cd6;">in
+        </span><span style="color:#569cd6;">        </span><span style="color:#b5cea8;">0</span>) echo <span style="color:#d69d85;">&quot;32&quot;</span>;;
+                <span style="color:#b5cea8;">1</span>) echo <span style="color:#d69d85;">&quot;640&quot;</span>;;  
+                <span style="color:#b5cea8;">2</span>) echo <span style="color:#d69d85;">&quot;256&quot;</span>;;
+                <span style="color:#b5cea8;">3</span>) echo <span style="color:#d69d85;">&quot;512&quot;</span>;;
+                <span style="color:#b5cea8;">4</span>) echo <span style="color:#d69d85;">&quot;1&quot;</span>;;  
+                *) echo <span style="color:#d69d85;">&quot;0&quot;</span>;;
+            esac
+        }
+        
+        getTimeLimits() {
+            local <span style="color:#9cdcfe;">test_index</span>=$<span style="color:#b5cea8;">1
+        </span><span style="color:#b5cea8;">    </span><span style="color:#569cd6;">case </span>$<span style="color:#9cdcfe;">test_index </span><span style="color:#569cd6;">in
+        </span><span style="color:#569cd6;">        </span><span style="color:#b5cea8;">0</span>) echo <span style="color:#d69d85;">&quot;50&quot;</span>;;
+                <span style="color:#b5cea8;">1</span>) echo <span style="color:#d69d85;">&quot;150&quot;</span>;;  
+                <span style="color:#b5cea8;">2</span>) echo <span style="color:#d69d85;">&quot;500&quot;</span>;;
+                <span style="color:#b5cea8;">3</span>) echo <span style="color:#d69d85;">&quot;1000&quot;</span>;;
+                <span style="color:#b5cea8;">4</span>) echo <span style="color:#d69d85;">&quot;1&quot;</span>;;  
+                *) echo <span style="color:#d69d85;">&quot;0&quot;</span>;;
+            esac
+        }
+        
+        getCorrectOutput() {
+            local <span style="color:#9cdcfe;">test_index</span>=$<span style="color:#b5cea8;">1
+        </span><span style="color:#b5cea8;">    </span><span style="color:#569cd6;">case </span>$<span style="color:#9cdcfe;">test_index </span><span style="color:#569cd6;">in
+        </span><span style="color:#569cd6;">        </span><span style="color:#b5cea8;">0</span>) echo <span style="color:#d69d85;">&quot;15&quot;</span>;;
+                <span style="color:#b5cea8;">1</span>) echo <span style="color:#d69d85;">&quot;9&quot;</span>;;
+                <span style="color:#b5cea8;">2</span>) echo <span style="color:#d69d85;">&quot;30&quot;</span>;;
+                <span style="color:#b5cea8;">3</span>) echo <span style="color:#d69d85;">&quot;100&quot;</span>;;
+                <span style="color:#b5cea8;">4</span>) echo <span style="color:#d69d85;">&quot;12&quot;</span>;;
+                *) echo <span style="color:#d69d85;">&quot;0&quot;</span>;;
+            esac
+        }
+        
+        <span style="color:#569cd6;"># </span>Main script logic, do not modify
+        <span style="color:#569cd6;">if </span>[[ $# -eq <span style="color:#b5cea8;">0 </span>]]; then
+            <span style="color:#9cdcfe;">getNumTests
+        </span>elif [[ $<span style="color:#b5cea8;">1 </span>== <span style="color:#d69d85;">&quot;P&quot; </span>&amp;&amp; $# -eq <span style="color:#b5cea8;">2 </span>]]; then
+            <span style="color:#9cdcfe;">getMemoryLimits </span>$<span style="color:#b5cea8;">2
+        </span>elif [[ $<span style="color:#b5cea8;">1 </span>== <span style="color:#d69d85;">&quot;T&quot; </span>&amp;&amp; $# -eq <span style="color:#b5cea8;">2 </span>]]; then
+            <span style="color:#9cdcfe;">getTimeLimits </span>$<span style="color:#b5cea8;">2
+        </span>elif [[ $<span style="color:#b5cea8;">1 </span>== <span style="color:#d69d85;">&quot;R&quot; </span>&amp;&amp; $# -eq <span style="color:#b5cea8;">2 </span>]]; then
+            <span style="color:#9cdcfe;">getCorrectOutput </span>$<span style="color:#b5cea8;">2
+        </span>elif [[ $<span style="color:#b5cea8;">1 </span>=~ ^[<span style="color:#b5cea8;">0</span>-<span style="color:#b5cea8;">9</span>]+$ ]]; then
+            <span style="color:#9cdcfe;">getTestInput </span>$<span style="color:#b5cea8;">1
+        </span><span style="color:#569cd6;">else
+        </span><span style="color:#569cd6;">    </span>echo <span style="color:#d69d85;">&quot;Invalid arguments&quot;
+        </span><span style="color:#d69d85;">    </span>exit <span style="color:#b5cea8;">1
+        </span>fi</pre>
+        </div>
+    </div>
+    <div style="background-color: lightblue; height: 1px;"></div>
+
+</div>

@@ -1,0 +1,166 @@
+﻿@page
+@using CodingPortal2.DatabaseEnums
+@using CodingPortal2.Shared
+@model CodingPortal2.Pages.AddUsersModel
+
+@{
+    Layout = UserHelper.GetLayoutBasedOnPermissionLevel(Model.PermissionLevel);
+    ViewData["Title"] = "Add Users";
+}
+
+@if (ViewData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @ViewData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (ViewData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @ViewData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<!DOCTYPE html>
+<div>
+    <input type="hidden" id="selectedGroupCode" name="selectedGroupCode" />
+    <input type="hidden" id="selectedYear" name="selectedYear" />
+    <input type="hidden" id="selectedSemester" name="selectedSemester" />
+
+    <form method="post" enctype="multipart/form-data">
+        <div class="row g-3 align-items-center" style="margin: 0.25% 0.5% 0.25%;">
+            <div class="col-auto">
+                <label class="col-form-label">Upload .xlsx file</label>
+            </div>
+            <div class="col-auto">
+                <input type="file" class="form-control" name="file" accept=".xlsx" />
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-primary" type="submit" name="action" style="width: 155px;" value="UploadFile">Upload File</button>
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-primary" type="submit" name="action" style="width: 155px;" value="SendUsersToDatabase">Send to Database</button>
+            </div>
+        </div>
+        <div class="row g-3 align-items-center" style="margin: 0 0.5% 1%;">
+            <div class="col-auto">
+                <div class="input-group">
+                    <select class="form-control" id="groupCodeSelect" name="groupCodeSelect" onchange="updateGroupDetails()">
+                        <option value="">New Group Code</option>
+                        @foreach (var group in Model.Groups)
+                        {
+                            <option value="@group.Code">@group.Code</option>
+                        }
+                    </select>
+                    <input type="text" class="form-control" id="groupCodeInput" name="groupCodeInput">
+                </div>
+            </div>
+            <div class="col-auto">
+                <select class="form-control" id="yearSelect" name="yearSelect" onchange="updateYearFormat()">
+                </select>
+            </div>
+            <div class="col-auto">
+                <select class="form-control" id="semesterSelect" name="semesterSelect" data-value="@SemesterHelper.GetSemester()">
+                    @foreach (Semester semester in Enum.GetValues(typeof(Semester)))
+                    {
+                        <option value="@semester">@semester</option>
+                    }
+                </select>
+            </div>
+        </div>
+        <textarea class="form-control" id="loginTextArea" name="loginTextArea" rows="20" cols="20"
+                  placeholder="paste user login in each row" style="margin: 1%; width: 98%; font-family: 'Courier New', serif">@{
+                if (Model.ExtractedData != null)
+                {
+                    @Html.Raw(string.Join("\n", Model.ExtractedData))
+                }
+            }</textarea>
+    </form>
+</div>
+
+<script>
+    async function updateGroupDetails() {
+        let select = document.getElementById('groupCodeSelect');
+        let selectedGroupCode = select.options[select.selectedIndex].value;
+    
+        const excludedGroupCodes = ['', 'New Group Code'];
+    
+        if (excludedGroupCodes.includes(selectedGroupCode.trim())) {
+            let groupCodeInput = document.getElementById('groupCodeInput');
+            groupCodeInput.value = '';
+            document.getElementById('yearSelect').value = new Date().getFullYear();
+            updateYearFormat();
+            disableYearAndSemester(false);
+            return;
+        }
+    
+        let response = await fetch(`/AddUsers?handler=GroupDetails&groupCode=${selectedGroupCode}`);
+    
+        if (response.ok) {
+            let data = await response.json();
+    
+            let yearSelect = document.getElementById('yearSelect');
+            let selectedYear = data.year.trim();
+    
+            let yearOptions = yearSelect.options;
+            for (let i = 0; i < yearOptions.length; i++) {
+                if (yearOptions[i].text === selectedYear) {
+                    yearOptions[i].selected = true;
+                    break;
+                }
+            }
+    
+            let semesterSelect = document.getElementById('semesterSelect');
+            let selectedSemester = data.semester;
+            semesterSelect.value = selectedSemester === 1 ? 'Summer' : selectedSemester === 0 ? 'Winter' : 'error';
+    
+            let groupCodeInput = document.getElementById('groupCodeInput');
+            groupCodeInput.value = selectedGroupCode;
+    
+            disableYearAndSemester(true);
+    
+        } else {
+            console.error('Failed to fetch group details');
+        }
+    }
+    
+    function disableYearAndSemester(disable) {
+        let yearSelect = document.getElementById('yearSelect');
+        let semesterSelect = document.getElementById('semesterSelect');
+        
+        yearSelect.disabled = disable;
+        semesterSelect.disabled = disable;
+    }
+
+    function updateYearFormat() {
+        let yearSelect = document.getElementById('yearSelect');
+        document.getElementById('selectedYear').value = yearSelect.value;
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        fetch('/AddUsers?handler=Years')
+            .then(response => response.json())
+            .then(data => {
+                // Populate the select element
+                let yearSelect = document.getElementById('yearSelect');
+                data.forEach(year => {
+                    let option = document.createElement('option');
+                    option.value = year;
+                    option.text = year;
+                    yearSelect.appendChild(option);
+                });
+
+                let currentYear = new Date().getFullYear();
+                yearSelect.value = `${currentYear}/${currentYear + 1}`;
+    
+                updateYearFormat();
+            })
+            .catch(error => console.error('Error fetching years:', error));
+    });
+    
+    document.getElementById('yearSelect').value = new Date().getFullYear();
+    updateYearFormat();
+</script>

@@ -1,0 +1,398 @@
+﻿@page
+@using CodingPortal2.Shared
+@model CodingPortal2.Pages.SubmittedSolutionsModel
+
+@{
+    Layout = UserHelper.GetLayoutBasedOnPermissionLevel(Model.PermissionLevel);
+    ViewData["Title"] = "Submitted AssignmentsOfUserId";
+}
+
+@if (ViewData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @ViewData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (ViewData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @ViewData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (Model.PermissionLevel is "Admin" or "Teacher")
+{
+    <div style="margin-left: 1%; margin-right: 1%; margin-top: 1%;">
+        <div class="d-flex">
+            <input class="form-control me-sm-2" type="text" id="groupCodeSearch" style="max-width: 20%; min-width: 300px !important;" onkeyup="searchGroupCode()" placeholder="Search group code...">
+            <input class="form-control me-sm-2" type="text" id="assignmentTitleSearchGlobal" style="max-width: 20%; min-width: 300px !important;" onkeyup="searchAssignmentTitleGlobal()" placeholder="Search assignment title globally...">
+        </div>
+        @foreach (var (group, assignmentsWithSolutions) in Model.AssignmentsWithSolutions)
+        {
+            <div class="card mb-3 group-card">
+                <div class="d-flex justify-content-between align-items-center card-header">
+                    <div>
+                        <div class="d-flex">
+                            <div class="cardHeader">
+                                <h3 class="m-0">@group.Code</h3>
+                            </div>
+                            <div>
+                                <input class="form-control me-sm-2" type="text" id="assignmentTitleSearch" onkeyup="searchAssignmentTitle()" placeholder="Search assignment title...">
+                            </div>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div>
+                            <button class="btn btn-primary toggle-button" onclick="toggleAllAssignmentsAdmin('@group.GroupId')">Toggle Assignments</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0 assignments-container" id="assignments-@group.GroupId" style="max-height: 100%; overflow-y: auto; display: none;">
+                    @foreach (var (assignment, userSolutions) in assignmentsWithSolutions)
+                    {
+                        <div class="card mb-3 assignment-card">
+                            <div class="d-flex justify-content-between align-items-center card-header">
+                                <div style="max-width: 900px" class="d-flex justify-content-between align-items-center">
+                                    <div class="cardHeader">
+                                        <h3 class="m-0">@assignment.Title</h3>
+                                    </div>
+                                    <div class="d-flex">
+                                        <input class="form-control me-sm-2" style="min-width: 200px" type="text" id="userLoginSearch" onkeyup="searchUserLogin()" placeholder="Search user login...">
+                                        <form method="post" id="RunPlagiarismCheck" asp-page-handler="RunPlagiarismCheck">
+                                            <input type="hidden" name="assignmentId" value="@assignment.AssignmentId" />
+                                            <button class="btn btn-primary" type="submit" style="min-width: 200px">Run Plagiarism Check</button>
+                                        </form>
+                                    </div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div>
+                                        <button class="btn btn-primary toggle-button" onclick="toggleUsersAdmin('@group.GroupId', '@assignment.AssignmentId')">Toggle Users</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body p-0 users-container" id="users-@group.GroupId-@assignment.AssignmentId" style="max-height: 500px; overflow-y: auto; display: none;">
+                                @foreach (var (user, userAssignmentSolutions) in userSolutions)
+                                {
+                                    <div class="card mb-3 user-card">
+                                        <div class="d-flex justify-content-between align-items-center card-header">
+                                            <div>
+                                                <h3 class="m-0">@user.Login</h3>
+                                            </div>
+                                            <div style="text-align: right;">
+                                                <div>
+                                                    <button class="btn btn-primary toggle-button" onclick="toggleSolutionsAdmin('@group.GroupId', '@assignment.AssignmentId', '@user.UserId')">Toggle Solutions</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="card-body p-0 assignment-container">
+                                            <div class="solutions-container" id="solutions-@group.GroupId-@assignment.AssignmentId-@user.UserId" style="max-height: 700px; overflow-y: auto; display: none;">
+                                                <table class="table table-bordered AssignmentViewTable m-0">
+                                                    <thead style="height: 40px;">
+                                                    <tr>
+                                                        <th scope="col">Solution Id</th>
+                                                        <th scope="col">Tests</th>
+                                                        <th scope="col">Plagiarised</th>
+                                                        <th scope="col">Upload Date</th>
+                                                        <th scope="col">View Code</th>
+                                                        <th scope="col">
+                                                            <button class="btn btn-danger" onclick="confirmDeleteAllSolutions(@user.UserId, @assignment.AssignmentId, '@user.Login', '@assignment.Title')">Delete all solutions</button>
+                                                            <form method="post" id="delete-all-solutions-form" asp-page-handler="DeleteAllSolutions">
+                                                                <input type="hidden" id="user-id-input" name="userId"/>
+                                                                <input type="hidden" id="assignment-id-input" name="assignmentId"/>
+                                                                <input type="hidden" id="user-login-input" name="userLogin"/>
+                                                                <input type="hidden" id="assignment-title-input" name="assignmentTitle"/>
+                                                                <input type="hidden" id="confirmation-input" name="ConfirmDeletionAllSolutions"/>
+                                                            </form>
+                                                        </th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                    @foreach (var solution in userAssignmentSolutions.OrderByDescending(assignmentSolution => assignmentSolution.TestPassed).ThenBy(assignmentSolution => assignmentSolution.UploadDateTime))
+                                                    {
+                                                        var backgroundColor = solution.TestPassed == solution.TotalTests && solution.TestPassed > 0 ? "background-color: #d4edda;" : "";
+
+                                                        <tr class="table-cell">
+                                                            <td class="table-cell">@solution.UserAssignmentSolutionId</td>
+                                                            <td style="@Html.Raw(backgroundColor)" class="table-cell">@($"{solution.TestPassed} / {solution.TotalTests}")</td>
+                                                            <td class="table-cell">
+                                                                @{
+                                                                    bool anyPlagiarismsFound = false;
+                                                                    foreach (var plagiarismEntry in solution.Plagiarism.PlagiarismEntries)
+                                                                    {
+                                                                        // Check if any of the plagiarised solution IDs match any of the user's solution IDs
+                                                                        var isUserSolutionPlagiarised = userAssignmentSolutions.Any(userSolution => userSolution.UserAssignmentSolutionId == plagiarismEntry.PlagiarisedSolutionId);
+
+                                                                        // If the plagiarised solution ID matches any of the user's own solution IDs, skip displaying it as plagiarised
+                                                                        if (!isUserSolutionPlagiarised)
+                                                                        {
+                                                                            anyPlagiarismsFound = true;
+                                                                            <a href="@Url.Page("PlagiarismInfo", new { checkedSolutionId = solution.Plagiarism.UserAssignmentSolution.UserAssignmentSolutionId, plagiarizedSolutionIds = string.Join(",", solution.Plagiarism.PlagiarismEntries.Select(pe => pe.PlagiarisedSolutionId)) })" target="_blank">
+                                                                                @($"{plagiarismEntry.PlagiarisedSolutionId} ({plagiarismEntry.Percentage}%)")
+                                                                            </a>
+                                                                            if (plagiarismEntry != solution.Plagiarism.PlagiarismEntries.Last())
+                                                                            {
+                                                                                <text>,&nbsp;</text>
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                    if (!anyPlagiarismsFound)
+                                                                    {
+                                                                        <span>Original Solution</span>
+                                                                    }
+                                                                }
+                                                            </td>
+
+                                                            <td class="table-cell">@solution.UploadDateTime</td>
+                                                            <form method="post" id="view-solution-form" target="_blank" asp-page-handler="ViewSolutionCode" asp-route-userAssignmentSolutionId="@solution.UserAssignmentSolutionId">
+                                                                <td class="table-cell">
+                                                                    <button class="btn btn-primary" type="submit" name="action" value="View">View</button>
+                                                                </td>
+                                                            </form>
+                                                            <td class="table-cell">
+                                                                <button class="btn btn-danger" onclick="confirmDeleteSolution(@user.UserId, @assignment.AssignmentId, @solution.UserAssignmentSolutionId, '@user.Login', '@assignment.Title')">Delete</button>
+                                                                <form method="post" id="delete-solution-form" asp-page-handler="DeleteSolution">
+                                                                    <input type="hidden" id="user-id-input2" name="userId"/>
+                                                                    <input type="hidden" id="assignment-id-input2" name="assignmentId"/>
+                                                                    <input type="hidden" id="user-assignment-solution-id2" name="userAssignmentSolutionId"/>
+                                                                    <input type="hidden" id="user-login-input2" name="userLogin"/>
+                                                                    <input type="hidden" id="assignment-title-input2" name="assignmentTitle"/>
+                                                                    <input type="hidden" id="confirmation-input2" name="ConfirmDeleteSolution"/>
+                                                                </form>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@if (Model.PermissionLevel is "Student")
+{
+
+    <div style="margin-top: 1.5%; margin-left: 1%; margin-right: 1%">
+        @foreach (var assignment in Model.AssignmentsOfUserId)
+        {
+            <div class="card mb-3">
+                <div class="d-flex justify-content-between align-items-center card-header">
+                    <div>
+                        <h3 class="m-0">@assignment.Title</h3>
+                    </div>
+                    <div style="text-align: right;">
+                        <div>
+                            <button class="btn btn-primary toggle-button" onclick="toggleSolutionsUser('@assignment.AssignmentId')">Toggle Solutions</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="assignment-container">
+                        <div class="solutions-container" id="solutions-@assignment.AssignmentId" style="max-height: 248px; overflow-y: auto; display: none;">
+                            <table class="table table-bordered AssignmentViewTable m-0">
+                                <thead style="height: 40px;">
+                                <tr>
+                                    <th scope="col">Solution Id</th>
+                                    <th scope="col">Tests</th>
+                                    <th scope="col">Upload Date</th>
+                                    <th scope="col">View Code</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                @{
+                                    var userId = Model.UserId;
+                                    var userSolutions = assignment.UserSolutions.Where(solution => solution.UserId == userId);
+                                }
+
+                                @foreach (var solution in userSolutions)
+                                {
+                                    var backgroundColor = solution.TestPassed == solution.TotalTests && solution.TestPassed > 0 ? "background-color: #d4edda;" : "";
+    
+                                    <tr class="table-cell">
+                                        <td class="table-cell">@solution.UserAssignmentSolutionId</td>
+                                        <td style="@Html.Raw(backgroundColor)" class="table-cell">@($"{solution.TestPassed} / {solution.TotalTests}")</td>
+                                        <td class="table-cell">@solution.UploadDateTime</td>
+                                        <form method="post" id="view-solution-form" target="_blank" asp-page-handler="ViewSolutionCode" asp-route-userAssignmentSolutionId="@solution.UserAssignmentSolutionId">
+                                            <td class="table-cell">
+                                                <button class="btn btn-primary" type="submit" name="action" value="View">View</button>
+                                            </td>
+                                        </form>
+                                    </tr>
+                                }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+}
+
+<style>
+    .table-body {
+      line-height: 40px;
+    }
+    
+    .table-cell {
+      padding: 0 !important;
+      line-height: 40px;
+      text-align: center;
+    }
+    
+    .cardHeader {
+      margin-right: 25px;
+    }
+    
+    .user-card {
+    }
+    
+    .assignment-card {
+    }
+    
+    .group-card {
+    }
+</style>
+
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+
+
+
+<script>
+    function toggleSolutionsUser(assignmentId) {
+        const solutionsContainer = $('#solutions-' + assignmentId);
+        solutionsContainer.toggle();
+    }
+
+    function toggleAllSolutionsUser(userId) {
+        $('.solutions-container[id^="solutions-' + userId + '"]').toggle();
+    }
+    
+    function toggleAllAssignmentsAdmin(groupId) {
+        $('.assignments-container[id^="assignments-' + groupId + '"]').toggle();
+    }
+
+    function toggleUsersAdmin(groupId, assignmentId) {
+        $('.users-container[id^="users-' + groupId + '-' + assignmentId + '"]').toggle();
+    }
+
+    function toggleSolutionsAdmin(groupId, assignmentId, userId) {
+        $('.solutions-container[id^="solutions-' + groupId + '-' + assignmentId + '-' + userId + '"]').toggle();
+    }
+
+    function confirmDeleteAllSolutions(userId, assignmentId, userLogin, assignmentTitle) {
+        const confirmationMessage = `You are about to DELETE all solutions (excluding those with all tests passed) for user ${userLogin} and assignment ${assignmentTitle}, continue?`;
+        const confirmation = confirm(confirmationMessage);
+        if (confirmation) {
+            $('#user-id-input').val(userId);
+            $('#assignment-id-input').val(assignmentId);
+            $('#user-login-input').val(userLogin);
+            $('#assignment-title-input').val(assignmentTitle);
+            $('#confirmation-input').val('true');
+    
+            $('#delete-all-solutions-form').submit();
+        }
+    }
+    
+    function searchAssignmentTitleGlobal() {
+        let input, filter, groups, group, assignmentTitles, i;
+        input = $("#assignmentTitleSearchGlobal");
+        filter = input.val().toUpperCase();
+        groups = $(".group-card");
+
+        groups.each(function () {
+            group = $(this);
+            assignmentTitles = group.find(".assignment-card h3.m-0").map(function () {
+                return $(this).text().toUpperCase();
+            }).get();
+
+            // Check if any assignment title in the group contains the filter text
+            if (assignmentTitles.some(title => title.indexOf(filter) > -1)) {
+                group.show();
+            } else {
+                group.hide();
+            }
+        });
+    }
+    
+    function confirmDeleteSolution(userId, assignmentId, userAssignmentSolutionId, userLogin, assignmentTitle) {
+        const confirmationMessage2 = `You are about to DELETE solution for user ${userLogin} and assignment ${assignmentTitle}, continue?`;
+        const confirmation2 = confirm(confirmationMessage2);
+        if (confirmation2) {
+            $('#user-id-input2').val(userId);
+            $('#assignment-id-input2').val(assignmentId);
+            $('#user-assignment-solution-id2').val(userAssignmentSolutionId);
+            $('#user-login-input2').val(userLogin);
+            $('#assignment-title-input2').val(assignmentTitle)
+            $('#confirmation-input2').val('true');
+    
+            $('#delete-solution-form').submit();
+        }
+    }
+
+    function searchGroupCode() {
+        let input, filter, cards, card, title, i;
+        input = $("#groupCodeSearch");
+        filter = input.val().toUpperCase();
+        cards = $(".group-card");
+    
+        cards.each(function () {
+            card = $(this);
+            title = card.find("h3.m-0").text().toUpperCase();
+    
+            if (title.indexOf(filter) > -1) {
+                card.show();
+            } else {
+                card.hide();
+            }
+        });
+    }
+    
+    function searchAssignmentTitle() {
+        let input, filter, cards, card, title, i;
+        input = $("#assignmentTitleSearch");
+        filter = input.val().toUpperCase();
+        cards = $(".assignment-card");
+    
+        cards.each(function () {
+            card = $(this);
+            title = card.find("h3.m-0").text().toUpperCase();
+    
+            if (title.indexOf(filter) > -1) {
+                card.show();
+            } else {
+                card.hide();
+            }
+        });
+    }
+    
+    function searchUserLogin() {
+        let input, filter, cards, card, title, i;
+        input = $("#userLoginSearch");
+        filter = input.val().toUpperCase();
+        cards = $(".user-card");
+    
+        cards.each(function () {
+            card = $(this);
+            title = card.find("h3.m-0").text().toUpperCase();
+    
+            if (title.indexOf(filter) > -1) {
+                card.show();
+            } else {
+                card.hide();
+            }
+        });
+    }
+
+</script>

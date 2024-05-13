@@ -1,0 +1,24 @@
+﻿@page
+@using CodingPortal2.Shared
+@model CodingPortal2.Pages.ViewSolutionCode
+
+@{
+    Layout = UserHelper.GetLayoutBasedOnPermissionLevel(Model.PermissionLevel);
+    ViewData["Title"] = "Group List";
+}
+
+@if (ViewData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @ViewData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<!DOCTYPE html>
+
+<div>
+    <div style="width: 98%; min-height: 600px; margin: 1%">
+        @Html.Raw(Model.UserCode)
+    </div>
+</div>

@@ -1,0 +1,176 @@
+﻿@page
+@using CodingPortal2.DatabaseEnums
+@using CodingPortal2.Shared
+@model CodingPortal2.Pages.UserListModel
+
+@{
+    Layout = UserHelper.GetLayoutBasedOnPermissionLevel(Model.PermissionLevel);
+    ViewData["Title"] = "User List";
+}
+
+@if (ViewData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @ViewData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (ViewData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @ViewData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<!DOCTYPE html>
+<div>
+    <table class="table table-bordered" id="userTable">
+        <thead>
+        <tr>
+            <th scope="col">User Id</th>
+            <th scope="col">
+                <label for="searchInput1">Group Codes:</label>
+                <input class="form-control" type="text" id="searchInput1" onkeyup="filterTable(1)" placeholder="Search...">
+            </th>
+            <th scope="col">Add to Group</th>
+            <th scope="col">
+                <label>Select Users</label>
+                <button id="copyUsersButton" class="form-control btn btn-primary" type="button">Copy Selected Students</button>
+            </th>
+            <th scope="col">
+                <label for="searchInput4">Login:</label>
+                <input class="form-control" type="text" id="searchInput4" onkeyup="filterTable(4)" placeholder="Search...">
+            </th>
+            <th scope="col">Login As User</th>
+            <th scope="col">Permission Level</th>
+        </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in Model.Users)
+            {
+                <tr>
+                    <td>@user.UserId</td>
+                    <td>
+                        @if (user.UserGroups.Any())
+                        {
+                            @string.Join(", ", user.UserGroups.Select(userGroup => userGroup.Group?.Code))
+                        }
+                    </td>
+                    <td>
+                        <div class="formDiv d-flex align-items-center">
+                            <div class="formDiv me-1">
+                                <form method="post" asp-page-handler="AddToGroup" asp-route-userId="@user.UserId">
+                                    <select class="btn btn-primary" id="selectedGroup" name="selectedGroup" style="min-width: 150px;">
+                                        @{
+                                            var sortedSelectedGroups = Model.Groups
+                                                .Where(group => user.UserGroups.All(userGroup => userGroup.GroupId != group.GroupId))
+                                                .OrderBy(group => group.Code);
+
+                                            foreach (var group in sortedSelectedGroups)
+                                            {
+                                                <option value="@group.Code">@group.Code</option>
+                                            }
+                                        }
+                                    </select>
+                                    <input class="btn btn-primary plus_minus_button" type="submit" value="+"/>
+                                </form>
+                            </div>
+                            <!-- <div class="formDiv">
+                                <form method="post" asp-page-handler="DeleteUser" asp-route-userId="@user.UserId">
+                                    <input id="DeleteUserButton" name="DeleteUserButton" class="btn btn-danger plus_minus_button" type="submit" value="-"/>
+                                </form>
+                            </div>-->
+                        </div>
+                    </td>
+                    <td class="text-center align-middle">
+                        <input class="form-check-input" type="checkbox" name="SelectedUserLogins" value="@user.Login" style="width: 25px; height: 25px;" />
+                    </td>
+                    <td>@user.Login</td>
+                    <td>
+                        <form method="post" asp-page-handler="LoginAsUser" asp-route-userId="@user.UserId">
+                            <button class="btn btn-primary" style="width: 120px;" type="submit">Login As</button>
+                        </form>
+                    </td>
+                    <td>
+                        <form method="post" asp-page-handler="UpdatePermission" asp-route-userId="@user.UserId">
+                            <select name="PermissionLevel" asp-for="@user.PermissionLevel"
+                                    asp-items='Html.GetEnumSelectList<PermissionLevel>()' class="btn btn-primary" style="width: 120px;"></select>
+                            <input class="btn btn-primary" style="width: 120px;" type="submit" value="Update"/>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<script>
+    function filterTable(columnIndex) {
+        let input, filter, table, tr, td, i, txtValue;
+        input = document.getElementById("searchInput" + columnIndex);
+        filter = input.value.toUpperCase();
+        table = document.getElementById("userTable");
+        tr = table.getElementsByTagName("tr");
+
+        for (i = 0; i < tr.length; i++) {
+            td = tr[i].getElementsByTagName("td")[columnIndex];
+            if (td) {
+                txtValue = td.textContent || td.innerText;
+                if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                    tr[i].style.display = "";
+                } else {
+                    tr[i].style.display = "none";
+                }
+            }
+        }
+    }
+    
+    document.getElementById('copyAllStudentUsersButton').addEventListener('click', function () {
+        let selectedUserLogins = [];
+        let checkboxes = document.querySelectorAll('input[name="SelectedUserLogins"]:checked');
+        checkboxes.forEach(function (checkbox) {
+            selectedUserLogins.push(checkbox.value);
+        });
+    
+        copyToClipboard(selectedUserLogins.join('\n'));
+    });
+    
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text)
+            .then(() => {
+                console.log('Text copied to clipboard: ' + text);
+                alert('User logins copied to clipboard');
+            })
+            .catch((err) => {
+                console.error('Unable to copy text to clipboard', err);
+                alert('No selected users');
+            });
+    }
+    
+    document.addEventListener('DOMContentLoaded', function () {
+        const selects = document.querySelectorAll('select');
+        let maxWidth = 0;
+
+        selects.forEach(function (select) {
+            let width = select.clientWidth;
+            if (width > maxWidth) {
+                maxWidth = width;
+            }
+        });
+
+        selects.forEach(function (select) {
+            select.style.minWidth = maxWidth + 'px';
+        });
+    });
+</script>
+
+<style>
+    .plus_minus_button {
+        min-width: 36px;
+        min-height: 36px;
+        max-width: 36px;
+        max-height: 36px;
+    }
+</style>

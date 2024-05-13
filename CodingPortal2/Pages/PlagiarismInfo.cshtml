@@ -1,0 +1,122 @@
+﻿@page
+@using CodingPortal2.Shared
+@model CodingPortal2.Pages.PlagiarismInfo
+
+@{
+    Layout = UserHelper.GetLayoutBasedOnPermissionLevel(Model.PermissionLevel);
+    ViewData["Title"] = "PlagiarismInfo";
+}
+
+@if (ViewData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @ViewData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (ViewData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @ViewData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div style="margin-left: 0.5%; margin-right: 0.5%; margin-top: 1%;">
+    <div class="d-flex">
+        <div class="solution-div">
+            <table class="table table-bordered" style="margin-top: 42px">
+                <thead>
+                <tr>
+                    <th>User: @GetUserLogin(Model.CheckedSolutionData.UserId)</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td>@Html.Raw(Model.CheckedSolutionData.Solution)</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="solution-div">
+            <div class="d-flex justify-content-between align-items-center">
+                <button class="btn btn-primary" style="width: 155px; margin-bottom: 4px;" onclick="showPreviousSolution()">Show previous</button>
+                <span id="currentIndex" style="font-size: 26px"> / @Model.PlagiarisedSolutionsData.Count</span>
+                <button class="btn btn-primary" style="width: 155px; margin-bottom: 4px;" onclick="showNextSolution()">Show next</button>
+            </div>
+
+            @for (int i = 0; i < Model.PlagiarisedSolutionsData.Count; i++)
+            {
+                var currentSolution = Model.PlagiarisedSolutionsData[i];
+                var plagiarismEntrySolution = Model.CheckedSolutionData;
+                var plagiarismEntry = plagiarismEntrySolution.Plagiarism.PlagiarismEntries.FirstOrDefault(entry => entry.PlagiarisedSolutionId == currentSolution.UserAssignmentSolutionId);
+
+
+                <div class="solution-container" style="display: @(i == 0 ? "block" : "none")">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>
+                                    User: @GetUserLogin(currentSolution.UserId) 
+                                    Similarity:
+                                    @if (plagiarismEntry != null)
+                                    {
+                                        @($"{plagiarismEntry.Percentage:F2}%")
+                                    }
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>@Html.Raw(currentSolution.Solution)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@functions {
+    string GetUserLogin(int userId)
+    {
+        var user = Model.UsersData.FirstOrDefault(u => u.UserId == userId);
+        return user?.Login ?? "Unknown";
+    }
+}
+
+<style>
+    .solution-div {
+        margin-left: 0.5%;
+        margin-right: 0.5%;
+        margin-top: 1%;
+        width: 49%;
+    }
+</style>
+
+<script>
+    let currentIndex = 0;
+    const totalSolutions = @Model.PlagiarisedSolutionsData.Count;
+
+    function showPreviousSolution() {
+        currentIndex = (currentIndex - 1 + totalSolutions) % totalSolutions;
+        updateSolutionView();
+    }
+
+    function showNextSolution() {
+        currentIndex = (currentIndex + 1) % totalSolutions;
+        updateSolutionView();
+    }
+
+    function updateSolutionView() {
+        const containers = document.querySelectorAll('.solution-container');
+        containers.forEach((container, index) => {
+            container.style.display = index === currentIndex ? 'block' : 'none';
+        });
+        document.getElementById('currentIndex').innerText = (currentIndex + 1) + ' / ' + totalSolutions;
+    }
+    
+    document.addEventListener('DOMContentLoaded', updateSolutionView);
+</script>
