@@ -154,7 +154,7 @@ public class DockerComponentInitializer
     private static async Task<CreateContainerResponse> CreateContainerWithUserCodeAndTests(string userCode, string imageName, string fileExtension,
         string examinationFileFolderPath, DockerClient dockerClient, ProgrammingLanguage language)
     {
-        var assignmentExaminationFile = Directory.GetFiles(examinationFileFolderPath, "*.out");
+        var assignmentExaminationFile = Directory.GetFiles(examinationFileFolderPath, "*.txt");
         var examinationFileAsString = string.Join("\n", assignmentExaminationFile.Select(File.ReadAllText));
         
         var containerCreateParams = new CreateContainerParameters
