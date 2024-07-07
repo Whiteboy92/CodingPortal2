@@ -70,19 +70,32 @@ public static class DockerTestOutputHelper
         return count;
     }
     
-    public static Task<string> RemoveHtmlFormatting(string html)
+    public static async Task<string> RemoveHtmlFormatting(string html)
     {
         var doc = new HtmlDocument();
         doc.LoadHtml(html);
 
-        var textContent = GetTextContent(doc.DocumentNode);
+        var preElement = doc.DocumentNode.SelectSingleNode("//pre");
 
-        textContent = Regex.Replace(textContent, "&nbsp;", " ");
-        textContent = Regex.Replace(textContent, "&gt;", ">");
-        textContent = Regex.Replace(textContent, "&lt;", "<");
-        textContent = Regex.Replace(textContent, "&amp;", "&");
+        if (preElement != null)
+        {
+            var textContent = preElement.InnerText;
 
-        return Task.FromResult(textContent.Trim());
+            // Remove HTML entities
+            textContent = Regex.Replace(textContent, "&nbsp;", " ");
+            textContent = Regex.Replace(textContent, "&gt;", ">");
+            textContent = Regex.Replace(textContent, "&lt;", "<");
+            textContent = Regex.Replace(textContent, "&amp;", "&");
+            textContent = Regex.Replace(textContent, "&quot;", "\"");
+
+            // Optionally trim whitespace around the extracted code
+            textContent = textContent.Trim();
+
+            return await Task.FromResult(textContent);
+        }
+
+        // If <pre> tag not found or other issue, return empty string
+        return await Task.FromResult(string.Empty);
     }
 
 

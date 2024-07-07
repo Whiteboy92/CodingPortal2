@@ -3,24 +3,24 @@
 @model CodingPortal2.Pages.AssignmentViewModel
 
 @{
-    Layout = UserHelper.GetLayoutBasedOnPermissionLevel(Model.PermissionLevel);
-    ViewData["Title"] = "Task Details";
+Layout = UserHelper.GetLayoutBasedOnPermissionLevel(Model.PermissionLevel);
+ViewData["Title"] = "Task Details";
 }
 
 @if (ViewData["SuccessMessage"] != null)
 {
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        @ViewData["SuccessMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
+<div class="alert alert-success alert-dismissible fade show" role="alert">
+    @ViewData["SuccessMessage"]
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
 }
 
 @if (ViewData["ErrorMessage"] != null)
 {
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        @ViewData["ErrorMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+    @ViewData["ErrorMessage"]
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
 }
 
 <!DOCTYPE html>
@@ -94,7 +94,7 @@
         async function updateTimeToNextUpload() {
             let now = new Date();
             let timeDifferenceToNextUpload = timeLeftToNextUpload - now;
-        
+
             if (timeDifferenceToNextUpload > 0) {
                 updateClock(timeLeftToNextUploadClock, timeDifferenceToNextUpload);
             } else {
@@ -110,30 +110,29 @@
             let hours = Math.floor((timeDifference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
             let minutes = Math.floor((timeDifference % (1000 * 60 * 60)) / (1000 * 60));
             let seconds = Math.floor((timeDifference % (1000 * 60)) / 1000);
-        
+
             let timeRemaining = '';
-        
+
             if (years > 0) {
                 timeRemaining += years + 'y ';
             }
-        
+
             if (days > 0 || years > 0) {
                 timeRemaining += days + 'd ';
             }
-        
+
             timeRemaining += hours + 'h ' + minutes + 'm ' + seconds + 's';
-        
+
             clockElement.innerHTML = 'Time remaining: ' + timeRemaining;
         }
     });
 </script>
 
-<script src="https://cdn.tiny.cloud/1/c5i14e3l42qin7qdrj4o7oe2mgw0jhilymlrm4f6x0bc7ymw/tinymce/5/tinymce.min.js"></script>
+<script src="https://cdn.ckeditor.com/4.22.0/standard/ckeditor.js"></script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        tinymce.init({
-            selector: 'textarea',
+        CKEDITOR.replace('UserCode', {
             height: 380,
         });
     });
@@ -141,17 +140,17 @@
 
 <script>
 
-function CoverSubmitCodeButton() {
-    var overlayButton = document.querySelector('#overlay-button');
+    function CoverSubmitCodeButton() {
+        var overlayButton = document.querySelector('#overlay-button');
 
-    setTimeout(function () {
-        overlayButton.style.pointerEvents = 'auto';
-    }, 0);
+        setTimeout(function () {
+            overlayButton.style.pointerEvents = 'auto';
+        }, 0);
 
-    setTimeout(function () {
-        overlayButton.style.display = 'none';
-    }, 20000);
-}
+        setTimeout(function () {
+            overlayButton.style.display = 'none';
+        }, 20000);
+    }
 </script>
 
 <style>

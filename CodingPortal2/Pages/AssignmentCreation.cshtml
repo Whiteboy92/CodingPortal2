@@ -4,24 +4,24 @@
 @model CodingPortal2.Pages.AssignmentCreationModel
 
 @{
-    Layout = UserHelper.GetLayoutBasedOnPermissionLevel(Model.PermissionLevel);
-    ViewData["Title"] = "Assignment Creation Form";
+Layout = UserHelper.GetLayoutBasedOnPermissionLevel(Model.PermissionLevel);
+ViewData["Title"] = "Assignment Creation Form";
 }
 
 @if (ViewData["SuccessMessage"] != null)
 {
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        @ViewData["SuccessMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
+<div class="alert alert-success alert-dismissible fade show" role="alert">
+    @ViewData["SuccessMessage"]
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
 }
 
 @if (ViewData["ErrorMessage"] != null)
 {
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        @ViewData["ErrorMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+    @ViewData["ErrorMessage"]
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
 }
 
 <!DOCTYPE html>
@@ -51,7 +51,7 @@
             </div>
         </div>
         <div class="formDiv">
-            <textarea asp-for="Assignment.Content" placeholder="Enter assignment content here ... the formatting persists"></textarea>
+            <textarea asp-for="Assignment.Content" placeholder="Enter assignment content here ... the formatting persists" id="Assignment_Content"></textarea>
         </div>
         <div class="formDiv">
             <input asp-for="Assignment.PathToTests" name="PathToTests" type="text" class="form-control" placeholder="Path to tests folder"/>
@@ -62,24 +62,21 @@
     </form>
 </div>
 
-
-<script src="https://cdn.tiny.cloud/1/c5i14e3l42qin7qdrj4o7oe2mgw0jhilymlrm4f6x0bc7ymw/tinymce/5/tinymce.min.js"></script>
+<script src="https://cdn.ckeditor.com/4.22.0/standard/ckeditor.js"></script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        tinymce.init({
-            selector: 'textarea',
+        CKEDITOR.replace('Assignment_Content', {
             height: 380,
-            init_instance_callback: function (editor) {
-                editor.on('Change', function (e) {
+            on: {
+                change: function () {
                     enableCreateButton();
-                });
+                }
             }
         });
 
         const form = document.querySelector('form');
         const title = document.querySelector('#Assignment_Title');
-        const content = document.querySelector('#Assignment_Content');
         const totalPoints = document.querySelector('#Assignment_TotalPoints');
         const language = document.querySelector('#Assignment_ProgrammingLanguage');
         const pathToTests = document.querySelector('#Assignment_PathToTests');
@@ -128,9 +125,8 @@
         totalPoints.addEventListener('input', enableCreateButton);
         language.addEventListener('change', enableCreateButton);
         title.addEventListener('input', function () { checkTitleExists(this.value); });
-        content.addEventListener('input', enableCreateButton);
-        pathToTests.addEventListener('input', enableCreateButton)
-        
+        pathToTests.addEventListener('input', enableCreateButton);
+
         checkTitleExists(title.value);
     });
 </script>

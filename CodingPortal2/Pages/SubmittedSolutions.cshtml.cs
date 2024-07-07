@@ -85,47 +85,47 @@ public class SubmittedSolutionsModel : PageModel
         return RedirectToPage("/SubmittedSolutions");
     }
 
-public Dictionary<Group, Dictionary<Assignment, Dictionary<User, List<UserAssignmentSolution>>>> GetAssignmentsInGroupsWithUserSolutions()
-{
-    // Retrieve groups where the logged-in user is the creator
-    var groupsWithAssignmentsAndSolutions = dbContext.Groups
-        .Include(group => group.AssignmentsInGroup)
-        .ThenInclude(assignment => assignment.AssignedUsers)
-        .ThenInclude(userAssignmentDate => userAssignmentDate.User)
-        .ThenInclude(user => user.UserAssignmentSolutions)
-        .ThenInclude(plagiarism => plagiarism.Plagiarism)
-        .ThenInclude(plagiarismEntry => plagiarismEntry.PlagiarismEntries)
-        .Include(group => group.AssignmentsInGroup)
-        .ThenInclude(assignment => assignment.AssignedUsers)
-        .ThenInclude(userAssignmentDate => userAssignmentDate.User)
-        .ThenInclude(user => user.UserGroups)
-        .Where(group => group.CreatorUserId == UserId) // Filter groups by creator
-        .ToList();
-
-    var result = new Dictionary<Group, Dictionary<Assignment, Dictionary<User, List<UserAssignmentSolution>>>>();
-
-    foreach (var group in groupsWithAssignmentsAndSolutions)
+    public Dictionary<Group, Dictionary<Assignment, Dictionary<User, List<UserAssignmentSolution>>>> GetAssignmentsInGroupsWithUserSolutions()
     {
-        var assignmentsWithSolutions = new Dictionary<Assignment, Dictionary<User, List<UserAssignmentSolution>>>();
+        // Retrieve groups where the logged-in user is the creator
+        var groupsWithAssignmentsAndSolutions = dbContext.Groups
+            .Include(group => group.AssignmentsInGroup)
+            .ThenInclude(assignment => assignment.AssignedUsers)
+            .ThenInclude(userAssignmentDate => userAssignmentDate.User)
+            .ThenInclude(user => user.UserAssignmentSolutions)
+            .ThenInclude(plagiarism => plagiarism.Plagiarism)
+            .ThenInclude(plagiarismEntry => plagiarismEntry.PlagiarismEntries)
+            .Include(group => group.AssignmentsInGroup)
+            .ThenInclude(assignment => assignment.AssignedUsers)
+            .ThenInclude(userAssignmentDate => userAssignmentDate.User)
+            .ThenInclude(user => user.UserGroups)
+            .Where(group => group.CreatorUserId == UserId) // Filter groups by creator
+            .ToList();
 
-        foreach (var assignment in group.AssignmentsInGroup)
+        var result = new Dictionary<Group, Dictionary<Assignment, Dictionary<User, List<UserAssignmentSolution>>>>();
+
+        foreach (var group in groupsWithAssignmentsAndSolutions)
         {
-            var usersWithSolutions = assignment.AssignedUsers
-                .Where(userAssignmentDate => userAssignmentDate.User.UserGroups.Any(userGroup => userGroup.GroupId == group.GroupId))
-                .SelectMany(userAssignmentDate => userAssignmentDate.User.UserAssignmentSolutions
-                    .Where(solution => solution.AssignmentId == assignment.AssignmentId)
-                    .ToList())
-                .GroupBy(solution => solution.User)
-                .ToDictionary(grouping => grouping.Key, grouping => grouping.ToList());
+            var assignmentsWithSolutions = new Dictionary<Assignment, Dictionary<User, List<UserAssignmentSolution>>>();
 
-            assignmentsWithSolutions.Add(assignment, usersWithSolutions);
+            foreach (var assignment in group.AssignmentsInGroup)
+            {
+                var usersWithSolutions = assignment.AssignedUsers
+                    .Where(userAssignmentDate => userAssignmentDate.User.UserGroups.Any(userGroup => userGroup.GroupId == group.GroupId))
+                    .SelectMany(userAssignmentDate => userAssignmentDate.User.UserAssignmentSolutions
+                        .Where(solution => solution.AssignmentId == assignment.AssignmentId)
+                        .ToList())
+                    .GroupBy(solution => solution.User)
+                    .ToDictionary(grouping => grouping.Key, grouping => grouping.ToList());
+
+                assignmentsWithSolutions.Add(assignment, usersWithSolutions);
+            }
+
+            result.Add(group, assignmentsWithSolutions);
         }
 
-        result.Add(group, assignmentsWithSolutions);
+        return result;
     }
-
-    return result;
-}
 
 
 

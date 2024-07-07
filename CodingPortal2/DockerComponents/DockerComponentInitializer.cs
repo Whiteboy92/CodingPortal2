@@ -93,7 +93,7 @@ public class DockerComponentInitializer
             // wait for copy of files
             await Task.Delay(3000);
 
-            var containerList = await dockerClient.Containers.ListContainersAsync(new ContainersListParameters());
+            /*var containerList = await dockerClient.Containers.ListContainersAsync(new ContainersListParameters());
             var container = containerList.FirstOrDefault(containerListResponse => containerListResponse.ID == containerWithUserCodeAndTests.ID);
             if (container != null)
             {
@@ -103,7 +103,7 @@ public class DockerComponentInitializer
             }
             
             await dockerClient.Containers.RemoveContainerAsync(containerWithUserCodeAndTests.ID, new ContainerRemoveParameters());
-            
+            */
             /*if (!string.IsNullOrWhiteSpace(errorString))
             {
                 testsOutputString = $"No tests executed. {testCount}";
