@@ -1,4 +1,4 @@
-﻿using CodingPortal2.Database;
+using CodingPortal2.Database;
 using CodingPortal2.DatabaseEnums;
 using CodingPortal2.DbModels;
 using CodingPortal2.PlagiarismDetection;
