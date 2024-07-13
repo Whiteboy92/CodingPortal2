@@ -1,4 +1,5 @@
-﻿using CodingPortal2.Database;
+﻿using System.Diagnostics.CodeAnalysis;
+using CodingPortal2.Database;
 using CodingPortal2.DbModels;
 using CodingPortal2.DockerComponents;
 using CodingPortal2.Services;
@@ -63,12 +64,14 @@ namespace CodingPortal2.Pages
             };
         }
         
+        [SuppressMessage("ReSharper.DPA", "DPA0012: High execution time of Razor page handler", MessageId = "time: 17682ms")]
         public async Task<IActionResult> OnPostSubmitCode(int assignmentId)
         {
             (PermissionLevel, Login, UserId) = UserHelper.GetUserProperties(HttpContext);
             var assignment = await assignmentService.GetAssignmentByIdAsync(assignmentId);
             if (assignment == null) return NotFound();
-            var userCode = Request.Form["UserCode"].ToString()!;
+            var userCode = Request.Form["code"].ToString()!;
+            var userCodeNoFormat = Request.Form["codeWithoutHtmlFormat"].ToString()!;
             
             await SetUploadTimer(assignmentId);
             GetUserTaskRemainingTime(assignmentId);
@@ -77,7 +80,7 @@ namespace CodingPortal2.Pages
             try
             {
                 var dockerInitializer = new DockerComponentInitializer(dbContext);
-                var result = await dockerInitializer.CompileUserCodeInContainer(userCode, language, assignmentId, UserId);
+                var result = await dockerInitializer.CompileUserCodeInContainer(userCode, userCodeNoFormat, language, assignmentId, UserId);
                 
 
                 if (result == "Compilation failed")

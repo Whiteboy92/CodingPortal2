@@ -11,6 +11,7 @@ namespace CodingPortal2.DbModels
         public int UserId { get; set; }
         public int PlagiarismId { get; set; }
         public string Solution { get; set; }
+        public string NoFormatSolution { get; set; }
         public DateTimeOffset UploadDateTime { get; set; }
         public int TestPassed { get; set; }
         public int TotalTests { get; set; }

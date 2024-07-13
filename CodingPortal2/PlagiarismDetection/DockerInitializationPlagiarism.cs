@@ -84,7 +84,7 @@ public class DockerInitializationPlagiarism
         
         var solutions = dbContext.UserAssignmentSolutions
             .Where(userAssignmentSolution => userAssignmentSolution.AssignmentId == assignmentId)
-            .Select(userAssignmentSolution => new { userAssignmentSolution.Solution, userAssignmentSolution.UserAssignmentSolutionId })
+            .Select(userAssignmentSolution => new { userAssignmentSolution.Solution, userAssignmentSolution.UserAssignmentSolutionId, userAssignmentSolution.NoFormatSolution })
             .ToList();
         
         cmdString += $"apt-get update && apt-get install -y perl && (cat <<'EOF' > moss.pl\n{pearlScriptContent}\n) && chmod 777 moss.pl && ";
@@ -92,7 +92,7 @@ public class DockerInitializationPlagiarism
         foreach (var solution in solutions)
         {
             var fileName = $"{solution.UserAssignmentSolutionId}";
-            string noFormattingSolution = await DockerTestOutputHelper.RemoveHtmlFormatting(solution.Solution);
+            string noFormattingSolution = solution.NoFormatSolution;
             noFormattingSolution += "\nEOF\n";
             string command = $"cat <<'EOF' > {fileName}.{extension}\n{noFormattingSolution}\n";
             cmdString += command;

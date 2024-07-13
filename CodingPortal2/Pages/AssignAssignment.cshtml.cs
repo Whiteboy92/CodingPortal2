@@ -80,7 +80,7 @@ public class AssignAssignmentModel : PageModel
         List<int> selectedUserIds = Request.Form["SelectedUserLogins"].Select(int.Parse).ToList();
         List<string>? selectedGroupCodes = Request.Form["SelectedGroupCodes"].ToList();
         List<int> overdueUserIds = GetUserIdsWithOverdueAssignment(assignment);
-        await DeleteUserAssignmentDatesAsync(overdueUserIds, assignmentId);
+        //await DeleteUserAssignmentDatesAsync(overdueUserIds, assignmentId);
 
         int days = ParseAndValidateInput(Request.Form["Days"]);
         int hours = ParseAndValidateInput(Request.Form["Hours"]);
@@ -104,6 +104,7 @@ public class AssignAssignmentModel : PageModel
         foreach (var group in groups)
         {
             group.AssignmentsInGroup ??= new List<Assignment>();
+            // important initialization
 
             var assignmentsInGroup = dbContext.Assignments
                 .Include(assignment1 => assignment1.Groups)
@@ -251,7 +252,7 @@ public class AssignAssignmentModel : PageModel
         return overdueUserIds;
     }
     
-    public async Task DeleteUserAssignmentDatesAsync(List<int> userIds, int assignmentId)
+    /*public async Task DeleteUserAssignmentDatesAsync(List<int> userIds, int assignmentId)
     {
         var userAssignmentDates = dbContext.UserAssignmentDates
             .Where(userAssignmentDate => userIds.Contains(userAssignmentDate.UserId) && userAssignmentDate.AssignmentId == assignmentId)
@@ -259,7 +260,7 @@ public class AssignAssignmentModel : PageModel
 
         dbContext.UserAssignmentDates.RemoveRange(userAssignmentDates);
         await dbContext.SaveChangesAsync();
-    }
+    }*/
     
     protected virtual int ParseAndValidateInput(string input)
     {

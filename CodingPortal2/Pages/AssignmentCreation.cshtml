@@ -4,24 +4,24 @@
 @model CodingPortal2.Pages.AssignmentCreationModel
 
 @{
-    Layout = UserHelper.GetLayoutBasedOnPermissionLevel(Model.PermissionLevel);
-    ViewData["Title"] = "Assignment Creation Form";
+Layout = UserHelper.GetLayoutBasedOnPermissionLevel(Model.PermissionLevel);
+ViewData["Title"] = "Assignment Creation Form";
 }
 
 @if (ViewData["SuccessMessage"] != null)
 {
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        @ViewData["SuccessMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
+<div class="alert alert-success alert-dismissible fade show" role="alert">
+    @ViewData["SuccessMessage"]
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
 }
 
 @if (ViewData["ErrorMessage"] != null)
 {
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        @ViewData["ErrorMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+    @ViewData["ErrorMessage"]
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
 }
 
 <!DOCTYPE html>
@@ -51,7 +51,8 @@
             </div>
         </div>
         <div class="formDiv">
-            <textarea asp-for="Assignment.Content" placeholder="Enter assignment content here ... the formatting persists"></textarea>
+            <textarea id="summernote"></textarea>
+            <input type="hidden" asp-for="Assignment.Content" id="Assignment_Content"/>
         </div>
         <div class="formDiv">
             <input asp-for="Assignment.PathToTests" name="PathToTests" type="text" class="form-control" placeholder="Path to tests folder"/>
@@ -62,24 +63,33 @@
     </form>
 </div>
 
-
-<script src="https://cdn.tiny.cloud/1/c5i14e3l42qin7qdrj4o7oe2mgw0jhilymlrm4f6x0bc7ymw/tinymce/5/tinymce.min.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/summernote/0.8.18/summernote-bs4.min.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/summernote/0.8.18/summernote-bs4.min.js"></script>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        tinymce.init({
-            selector: 'textarea',
+    $(document).ready(function() {
+        $('#summernote').summernote({
             height: 380,
-            init_instance_callback: function (editor) {
-                editor.on('Change', function (e) {
+            tabsize: 2,
+            placeholder: 'Enter content here... formatting priests',
+            toolbar: [
+                ['style', ['style']],
+                ['font', ['bold', 'italic', 'underline', 'clear']],
+                ['para', ['ul', 'ol', 'paragraph']],
+                ['insert', ['link', 'picture', 'video']],
+                ['view', ['fullscreen', 'codeview', 'help']]
+            ],
+            callbacks: {
+                onChange: function(contents, $editable) {
+                    $('#Assignment_Content').val(contents);
                     enableCreateButton();
-                });
+                }
             }
         });
 
         const form = document.querySelector('form');
         const title = document.querySelector('#Assignment_Title');
-        const content = document.querySelector('#Assignment_Content');
         const totalPoints = document.querySelector('#Assignment_TotalPoints');
         const language = document.querySelector('#Assignment_ProgrammingLanguage');
         const pathToTests = document.querySelector('#Assignment_PathToTests');
@@ -88,6 +98,7 @@
         const hoursInput = document.getElementById("Hours");
         const minutesInput = document.getElementById("Minutes");
         const errorMessage = document.getElementById('titleErrorMessage');
+        const hiddenContentInput = document.getElementById('Assignment_Content');
 
         enableCreateButton();
 
@@ -128,9 +139,8 @@
         totalPoints.addEventListener('input', enableCreateButton);
         language.addEventListener('change', enableCreateButton);
         title.addEventListener('input', function () { checkTitleExists(this.value); });
-        content.addEventListener('input', enableCreateButton);
-        pathToTests.addEventListener('input', enableCreateButton)
-        
+        pathToTests.addEventListener('input', enableCreateButton);
+
         checkTitleExists(title.value);
     });
 </script>
