@@ -1,4 +1,4 @@
-﻿using CodingPortal2.Database;
+using CodingPortal2.Database;
 using CodingPortal2.DatabaseEnums;
 using CodingPortal2.DbModels;
 using CodingPortal2.PlagiarismDetection;
@@ -81,7 +81,7 @@ public class SubmittedSolutionsModel : PageModel
         var fetchHttpData = new FetchHttpData(dbContext);
         if (resultUrl != null) await fetchHttpData.ProcessPlagiarismDataAsync(resultUrl);
 
-        PageHelper.SetTempDataSuccessMessage("Plagiarism data ready!", TempData);
+        PageHelper.SetTempDataSuccessMessage("Plagiarism data ready!" + resultUrl, TempData);
         return RedirectToPage("/SubmittedSolutions");
     }
 
@@ -126,8 +126,6 @@ public class SubmittedSolutionsModel : PageModel
 
         return result;
     }
-
-
 
     public List<Assignment> GetAssignmentsForUser(int userId)
     {

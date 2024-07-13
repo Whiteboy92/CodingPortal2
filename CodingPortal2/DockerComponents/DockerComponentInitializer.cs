@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Text.RegularExpressions;
 using CodingPortal2.Database;
 using CodingPortal2.DatabaseEnums;
 using CodingPortal2.DbModels;
@@ -15,7 +16,7 @@ public class DockerComponentInitializer
         this.dbContext = dbContext;
     }
     
-    public async Task<string> CompileUserCodeInContainer(string userCode, ProgrammingLanguage programmingLanguage, int assignmentId, int userId)
+    public async Task<string> CompileUserCodeInContainer(string userCode, string userCodeNoFormat, ProgrammingLanguage programmingLanguage, int assignmentId, int userId)
     {
         using var dockerClient = new DockerClientConfiguration(new Uri("npipe://./pipe/docker_engine")).CreateClient();
             
@@ -27,8 +28,17 @@ public class DockerComponentInitializer
 
             await DockerImageCreation.CreateDockerImage(dockerClient, imageName);
 
-            var userCodeWithoutFormat = await DockerTestOutputHelper.RemoveHtmlFormatting(userCode);
-            var containerWithUserCodeAndTests = await CreateContainerWithUserCodeAndTests(userCodeWithoutFormat, imageName, fileExtension,
+            userCodeNoFormat = userCodeNoFormat.Replace("&lt;", "<");
+            userCodeNoFormat = userCodeNoFormat.Replace("&gt;", ">");
+            userCodeNoFormat = userCodeNoFormat.Replace("&nbsp;", " ");
+            userCodeNoFormat = userCodeNoFormat.Replace("&amp;", "&");
+            
+            if (programmingLanguage == ProgrammingLanguage.Cpp)
+            {
+                userCodeNoFormat = AddNewlineAfterIncludes(userCodeNoFormat);
+            }
+            
+            var containerWithUserCodeAndTests = await CreateContainerWithUserCodeAndTests(userCodeNoFormat, imageName, fileExtension,
                 testsFolderPath!, dockerClient, programmingLanguage);
             await dockerClient.Containers.StartContainerAsync(containerWithUserCodeAndTests.ID, new ContainerStartParameters());
             
@@ -88,10 +98,28 @@ public class DockerComponentInitializer
             
             var testsOutputString = await File.ReadAllTextAsync("TotalTestsPassed.txt");
             
-            //-------------------
+            /*//-------------------
+            
+            var copyUserCode = $"docker cp {containerWithUserCodeAndTests.ID}:/myApp/UserCode.cpp UserCode.cpp";
+            var copyUserCodeProcessStartInfo = new ProcessStartInfo("cmd", $"/c {copyUserCode}")
+            {
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            };
+            
+            using var copyOutputProcess3 = new Process();
+            copyOutputProcess3.StartInfo = copyUserCodeProcessStartInfo;
+            copyOutputProcess3.Start();
+            await copyOutputProcess3.WaitForExitAsync();
+            
+            var userCodeOut = await File.ReadAllTextAsync("UserCode.cpp");
+            
+            *///-------------------
             
             // wait for copy of files
-            await Task.Delay(3000);
+            await Task.Delay(4000);
 
             /*var containerList = await dockerClient.Containers.ListContainersAsync(new ContainersListParameters());
             var container = containerList.FirstOrDefault(containerListResponse => containerListResponse.ID == containerWithUserCodeAndTests.ID);
@@ -112,7 +140,7 @@ public class DockerComponentInitializer
                 return "Compilation failed";
             }*/
             
-            await SaveUserSolutionToDb(userCode, assignmentId, userId, testsOutputString, totalTests);
+            await SaveUserSolutionToDb(userCode, userCodeNoFormat, assignmentId, userId, testsOutputString, totalTests);
             
             return $"Compilation output: {compilationError} {DockerTestOutputHelper.FormatTestsOutputForUser(testsOutputString, totalTests)}";
         }
@@ -122,12 +150,24 @@ public class DockerComponentInitializer
         }
     }
     
-    private async Task SaveUserSolutionToDb(string userCode, int assignmentId, int userId, string testsOutputString, string totalTests)
+    private static string AddNewlineAfterIncludes(string code)
+    {
+        // Use regular expression to find include directives
+        string pattern = @"(#include\s*<.*?>|#include\s*\""[^\""]*\"")";
+        
+        // Use Regex.Replace to add a newline after each include directive
+        string modifiedCode = Regex.Replace(code, pattern, "$1\n");
+        
+        return modifiedCode;
+    }
+    
+    private async Task SaveUserSolutionToDb(string userCode, string userCodeNoFormat, int assignmentId, int userId, string testsOutputString, string totalTests)
     {
         var userAssignmentSolution = new UserAssignmentSolution
         {
             UserId = userId,
             AssignmentId = assignmentId,
+            NoFormatSolution = userCodeNoFormat,
             Solution = userCode,
             UploadDateTime = DateTimeOffset.Now,
             TestPassed = DockerTestOutputHelper.GetPassedTestsCount(testsOutputString),
@@ -151,7 +191,7 @@ public class DockerComponentInitializer
         await dbContext.SaveChangesAsync();
     }
 
-    private static async Task<CreateContainerResponse> CreateContainerWithUserCodeAndTests(string userCode, string imageName, string fileExtension,
+    private static async Task<CreateContainerResponse> CreateContainerWithUserCodeAndTests(string userCodeNoFormat, string imageName, string fileExtension,
         string examinationFileFolderPath, DockerClient dockerClient, ProgrammingLanguage language)
     {
         var assignmentExaminationFile = Directory.GetFiles(examinationFileFolderPath, "*.txt");
@@ -174,7 +214,7 @@ public class DockerComponentInitializer
                 $"./ExaminationFile.sh > TestCount.txt && " +
                 $"touch CompilationError.txt && " +
                 $"chmod 777 TotalTestsPassed.txt && " +
-                $"echo '{userCode}' > {DockerImageCreation.GetFileName(language)}.{fileExtension} && " +
+                $"echo '{userCodeNoFormat}' > {DockerImageCreation.GetFileName(language)}.{fileExtension} && " +
                 $"{DockerImageCreation.GetCompilationCommand(language)}" + // Compile user code
                 $"num_tests=$(./ExaminationFile.sh) && " +
                 "for ((i = 0; i < num_tests; i++)); do " +

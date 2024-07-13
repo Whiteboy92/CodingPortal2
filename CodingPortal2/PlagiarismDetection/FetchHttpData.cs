@@ -91,9 +91,19 @@ public class FetchHttpData
                 continue;
             }
 
-            // Retrieve the existing Plagiarism entity associated with the UserAssignmentSolution
+            // Retrieve or create the Plagiarism entity associated with the UserAssignmentSolution
             var plagiarism = dbContext.Plagiarisms.Include(plagiarism => plagiarism.PlagiarismEntries)
                 .FirstOrDefault(plagiarism1 => plagiarism1.UserSolutionId == userAssignmentSolution.UserAssignmentSolutionId);
+
+            if (plagiarism == null)
+            {
+                plagiarism = new Plagiarism
+                {
+                    UserSolutionId = userAssignmentSolution.UserAssignmentSolutionId,
+                    PlagiarismEntries = new List<PlagiarismEntry>()
+                };
+                dbContext.Plagiarisms.Add(plagiarism);
+            }
 
             foreach (var similarFileData in fileSimilarities[baseFile])
             {
@@ -121,28 +131,50 @@ public class FetchHttpData
 
                 var similarityPercentage = double.Parse(percentageString);
                 
-                var existingEntry = plagiarism!.PlagiarismEntries
-                    .FirstOrDefault(entry => entry.PlagiarisedSolutionId == similarFileSolution.UserAssignmentSolutionId);
+                // Add or update the entry in the plagiarism entries collection
+                AddOrUpdatePlagiarismEntry(plagiarism, similarFileSolution, similarityPercentage);
 
-                if (existingEntry == null)
+                // Retrieve or create the Plagiarism entity for the similar file to store the bidirectional relationship
+                var similarFilePlagiarism = dbContext.Plagiarisms.Include(p => p.PlagiarismEntries)
+                    .FirstOrDefault(p => p.UserSolutionId == similarFileSolution.UserAssignmentSolutionId);
+
+                if (similarFilePlagiarism == null)
                 {
-                    var plagiarismEntry = new PlagiarismEntry
+                    similarFilePlagiarism = new Plagiarism
                     {
-                        PlagiarisedSolutionId = similarFileSolution.UserAssignmentSolutionId,
-                        Percentage = similarityPercentage,
-                        PlagiarisedSolution = similarFileSolution
+                        UserSolutionId = similarFileSolution.UserAssignmentSolutionId,
+                        PlagiarismEntries = new List<PlagiarismEntry>()
                     };
-                    
-                    plagiarism.PlagiarismEntries.Add(plagiarismEntry);
+                    dbContext.Plagiarisms.Add(similarFilePlagiarism);
                 }
-                else
-                {
-                    existingEntry.Percentage = similarityPercentage;
-                }
+
+                // Add or update the entry for the bidirectional relationship
+                AddOrUpdatePlagiarismEntry(similarFilePlagiarism, userAssignmentSolution, similarityPercentage);
             }
         }
         
         dbContext.SaveChanges();
     }
 
+    private void AddOrUpdatePlagiarismEntry(Plagiarism plagiarism, UserAssignmentSolution similarFileSolution, double similarityPercentage)
+    {
+        var existingEntry = plagiarism.PlagiarismEntries
+            .FirstOrDefault(entry => entry.PlagiarisedSolutionId == similarFileSolution.UserAssignmentSolutionId);
+
+        if (existingEntry == null)
+        {
+            var plagiarismEntry = new PlagiarismEntry
+            {
+                PlagiarisedSolutionId = similarFileSolution.UserAssignmentSolutionId,
+                Percentage = similarityPercentage,
+                PlagiarisedSolution = similarFileSolution
+            };
+            
+            plagiarism.PlagiarismEntries.Add(plagiarismEntry);
+        }
+        else
+        {
+            existingEntry.Percentage = similarityPercentage;
+        }
+    }
 }

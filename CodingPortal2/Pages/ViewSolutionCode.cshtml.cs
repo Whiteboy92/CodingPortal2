@@ -21,8 +21,7 @@ public class ViewSolutionCode : PageModel
     public string Login { get; set; } = "";
     public int UserId { get; set; }
     public string? UserCode { get; set; }
-
-
+    
     public Task OnGetAsync()
     {
         (PermissionLevel, Login, UserId) = UserHelper.GetUserProperties(HttpContext);
